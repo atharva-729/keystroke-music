@@ -50,7 +50,9 @@ ul.tight li{margin:3px 0}
 .card-head .phrase{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;color:var(--muted)}
 .score{font-size:.86rem;color:var(--muted)}
 .score b{color:var(--text)}
-.btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.speed{display:inline-flex;align-items:center;gap:6px;font-size:.86rem;color:var(--muted);margin-left:auto}
+.speed select{font:inherit;font-size:.9rem;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
 button.play{font:inherit;font-size:.9rem;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
 button.play:hover{border-color:var(--accent)}
 button.play.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
@@ -254,6 +256,17 @@ function keyPos(k){for(let r=0;r<ROWS.length;r++){const c=ROWS[r].indexOf(k);if(
 function noteName(k){const p=keyPos(k);return p?NOTE_NAMES[p.col]+" "+["square","bell","triangle","saw"][p.row]:"";}
 
 let ctx=null, current=null;
+// one playback speed for every card: clicks play faster (and higher), melodies compress their real click timings
+const SPEEDS=[0.25,0.5,0.75,1,1.5,2,3,4];
+let SPEED=2; try{const s=parseFloat(localStorage.getItem("speed"));if(SPEEDS.includes(s))SPEED=s;}catch(e){}
+function speedSelect(){
+  return `<label class="speed">Speed <select aria-label="Playback speed">${SPEEDS.map(s=>`<option value="${s}"${s===SPEED?" selected":""}>${s}×</option>`).join("")}</select></label>`;
+}
+function setSpeed(s){
+  SPEED=s; try{localStorage.setItem("speed",String(s));}catch(e){}
+  document.querySelectorAll(".speed select").forEach(x=>x.value=String(s));
+  if(current){const c=current;stopAll();play(c.ph,c.mode,c.btn,c.letters);}  // restart what's playing at the new speed
+}
 function audio(){if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")ctx.resume();return ctx;}
 function stopAll(){
   if(!current)return;
@@ -264,7 +277,7 @@ function stopAll(){
   current.btn.classList.remove("on");
   current=null;
 }
-function note(ac,dest,key,when,gain,nodes){
+function note(ac,dest,key,when,gain,nodes,len=1){
   const p=keyPos(key); if(!p)return;
   const f=LADDER[p.col], o=ac.createOscillator(), g=ac.createGain();
   let out=g, peak=gain, dur=0.4;
@@ -272,10 +285,11 @@ function note(ac,dest,key,when,gain,nodes){
   else if(p.row===1){o.type="sine";peak*=0.75;dur=0.7;}
   else if(p.row===2){o.type="triangle";peak*=0.8;dur=0.4;}
   else{o.type="sawtooth";peak*=0.3;dur=0.35;const lp=ac.createBiquadFilter();lp.type="lowpass";lp.frequency.value=1500;g.connect(lp);out=lp;}
+  dur*=len;
   o.frequency.value=f; o.connect(g); out.connect(dest);
   g.gain.setValueAtTime(0.0001,when);
   g.gain.exponentialRampToValueAtTime(Math.max(peak,0.0002),when+(p.row===1?0.005:0.012));
-  if(p.row===2){g.gain.setValueAtTime(peak,when+0.15);}
+  if(p.row===2){g.gain.setValueAtTime(peak,when+0.15*len);}
   g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
   o.start(when); o.stop(when+dur+0.05); nodes.push(o);
 }
@@ -288,27 +302,28 @@ function decodeAudio(ph){
 function play(ph,mode,btn,letters){
   const was=current&&current.btn===btn; stopAll(); if(was)return;
   const ac=audio(), master=ac.createGain(); master.gain.value=0.9; master.connect(ac.destination);
-  const nodes=[], start=ac.currentTime+0.08;
-  let offset, end;
+  const nodes=[], start=ac.currentTime+0.08, sp=SPEED;
+  let offset, end;  // both in track seconds; real time = track time / sp
   if(mode==="clicks"){
-    const src=ac.createBufferSource(); src.buffer=decodeAudio(ph); src.connect(master); src.start(start); nodes.push(src);
+    const src=ac.createBufferSource(); src.buffer=decodeAudio(ph); src.playbackRate.value=sp; src.connect(master); src.start(start); nodes.push(src);
     offset=0; end=ph.duration;
   }else{
     offset=ph.presses[0].t-0.15;
+    const len=Math.min(1,1/Math.sqrt(sp));  // shorter notes when sped up so they don't smear together
     ph.presses.forEach(p=>{
       const k=mode==="true"?p.true:p.pred, g=mode==="true"?0.8:0.3+0.7*p.conf;
-      note(ac,master,k,start+p.t-offset,g,nodes);
+      note(ac,master,k,start+(p.t-offset)/sp,g,nodes,len);
     });
-    end=ph.presses[ph.presses.length-1].t-offset+0.8;
+    end=ph.presses[ph.presses.length-1].t-offset+0.8*sp;
   }
   btn.classList.add("on");
-  const cur={nodes,master,btn,letters,raf:0}; current=cur;
+  const cur={nodes,master,btn,letters,ph,mode,raf:0}; current=cur;
   const tick=()=>{
     if(current!==cur)return;
-    const now=ac.currentTime-start+offset;
+    const now=(ac.currentTime-start)*sp+offset;
     let idx=-1; ph.presses.forEach((p,i)=>{if(now>=p.t-0.02)idx=i;});
     letters.forEach((l,i)=>l.classList.toggle("on",i===idx&&now<ph.presses[i].t+0.35));
-    if(ac.currentTime-start>end){stopAll();return;}
+    if((ac.currentTime-start)*sp>end){stopAll();return;}
     cur.raf=requestAnimationFrame(tick);
   };
   cur.raf=requestAnimationFrame(tick);
@@ -326,7 +341,7 @@ function card(ph,feature){
   const el=document.createElement("div"); el.className="card"+(feature?" feature":"");
   el.innerHTML=`<div class="card-head"><span class="phrase">typed: “${ph.text}”</span>
     <span class="score"><b>${right} / ${n}</b> keys right${ph.isolated_from_audio?"":` <span class="flag">· click positions given, not found from audio</span>`}</span></div>
-    <div class="btns"><button class="play" data-m="clicks">▶ Clicks</button><button class="play" data-m="true">▶ What was typed</button><button class="play heard" data-m="pred">▶ What the model heard</button></div>
+    <div class="btns"><button class="play" data-m="clicks">▶ Clicks</button><button class="play" data-m="true">▶ What was typed</button><button class="play heard" data-m="pred">▶ What the model heard</button>${speedSelect()}</div>
     <div class="letters"></div>`;
   const letters=[]; let i=0, box=null;
   for(const ch of ph.text){
@@ -338,6 +353,7 @@ function card(ph,feature){
     b.onclick=()=>pressDialog(ph,p); box.appendChild(b); letters.push(b);
   }
   el.querySelectorAll("button.play").forEach(b=>b.onclick=()=>play(ph,b.dataset.m,b,letters));
+  el.querySelector(".speed select").onchange=e=>setSpeed(parseFloat(e.target.value));
   return el;
 }
 function keyboard(D){
