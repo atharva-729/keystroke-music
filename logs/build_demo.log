@@ -1,0 +1,7 @@
+2026-10-29T14:05:06 'password123': 10/11 right, isolated_from_audio=True, gaps=(0.45, 0.6), max onset drift 6 ms, read as 'passwors123'
+2026-10-29T14:05:07 'hello world': 8/10 right, isolated_from_audio=True, gaps=(0.45, 0.6), max onset drift 47 ms, read as 'hellowvrls'
+2026-10-29T14:05:07 'straive': 7/7 right, isolated_from_audio=True, gaps=(0.45, 0.6), max onset drift 5 ms, read as 'straive'
+2026-10-29T14:05:07 'open the pod bay doors': 16/18 right, isolated_from_audio=True, gaps=(0.45, 0.6), max onset drift 46 ms, read as 'openthepvsbaydoors'
+2026-10-29T14:05:07 'qwerty': 6/6 right, isolated_from_audio=True, gaps=(0.45, 0.6), max onset drift 11 ms, read as 'qwerty'
+2026-10-29T14:05:07 'zoom call 2026': 10/12 right, isolated_from_audio=True, gaps=(0.45, 0.6), max onset drift 47 ms, read as 'zovmcall2028'
+2026-10-29T14:05:07 phrase accuracy 57/64 = 0.891 vs test accuracy 0.861

@@ -1,0 +1,78 @@
+{
+ "phrases": [
+  {
+   "text": "password123",
+   "right": 10,
+   "n": 11,
+   "isolated_from_audio": true,
+   "gaps": [
+    0.45,
+    0.6
+   ],
+   "threshold": 0.06,
+   "max_onset_drift_s": 0.006
+  },
+  {
+   "text": "hello world",
+   "right": 8,
+   "n": 10,
+   "isolated_from_audio": true,
+   "gaps": [
+    0.45,
+    0.6
+   ],
+   "threshold": 0.0355,
+   "max_onset_drift_s": 0.047
+  },
+  {
+   "text": "straive",
+   "right": 7,
+   "n": 7,
+   "isolated_from_audio": true,
+   "gaps": [
+    0.45,
+    0.6
+   ],
+   "threshold": 0.06,
+   "max_onset_drift_s": 0.005
+  },
+  {
+   "text": "open the pod bay doors",
+   "right": 16,
+   "n": 18,
+   "isolated_from_audio": true,
+   "gaps": [
+    0.45,
+    0.6
+   ],
+   "threshold": 0.0355,
+   "max_onset_drift_s": 0.046
+  },
+  {
+   "text": "qwerty",
+   "right": 6,
+   "n": 6,
+   "isolated_from_audio": true,
+   "gaps": [
+    0.45,
+    0.6
+   ],
+   "threshold": 0.06,
+   "max_onset_drift_s": 0.011
+  },
+  {
+   "text": "zoom call 2026",
+   "right": 10,
+   "n": 12,
+   "isolated_from_audio": true,
+   "gaps": [
+    0.45,
+    0.6
+   ],
+   "threshold": 0.0355,
+   "max_onset_drift_s": 0.047
+  }
+ ],
+ "phrase_accuracy": 0.890625,
+ "test_accuracy": 0.8611111044883728
+}
