@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystroke Music</title>
+<meta name="description" content="A model guessed which key was pressed from the sound alone. Its guesses play as a melody next to the real one; every wrong note is a key it misheard.">
+<style>
+:root{
+  --bg:#fbfaf7; --surface:#ffffff; --surface-2:#f3f1ec; --text:#1d1c1a; --muted:#6b6860; --line:#e4e1da;
+  --accent:#2f6f5e; --accent-soft:#dcebe5; --wrong:#c0392b; --wrong-soft:#f8e1de; --hl:#f4d35e; --hl-text:#1d1c1a;
+  --mark:#fff2b3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141413; --surface:#1d1d1b; --surface-2:#262624; --text:#ecebe6; --muted:#a19e95; --line:#34332f;
+    --accent:#6cc3a8; --accent-soft:#1f3a32; --wrong:#ff7b6b; --wrong-soft:#3d2320; --hl:#f4d35e; --hl-text:#1d1c1a;
+    --mark:#4a4220;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141413; --surface:#1d1d1b; --surface-2:#262624; --text:#ecebe6; --muted:#a19e95; --line:#34332f;
+  --accent:#6cc3a8; --accent-soft:#1f3a32; --wrong:#ff7b6b; --wrong-soft:#3d2320; --hl:#f4d35e; --hl-text:#1d1c1a;
+  --mark:#4a4220;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:980px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:1.75rem;line-height:1.2;margin:0 0 8px;letter-spacing:-.01em}
+h2{font-size:1.2rem;margin:44px 0 12px}
+h3{font-size:1rem;margin:22px 0 8px}
+p{margin:0 0 10px}
+a{color:var(--accent)}
+mark{background:var(--mark);color:inherit;padding:0 .15em;border-radius:3px}
+.lede{color:var(--muted);max-width:62ch;margin-bottom:14px}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+ul.tight{margin:0;padding-left:1.15em}
+ul.tight li{margin:3px 0}
+.hero{display:grid;grid-template-columns:1.35fr 1fr;gap:20px;align-items:start}
+.stat{background:var(--accent-soft);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.stat .big{font-size:2.1rem;font-weight:700;color:var(--accent);line-height:1.1}
+.stat .row{display:flex;gap:18px;margin-top:10px;flex-wrap:wrap}
+.stat .row div{font-size:.86rem;color:var(--muted)}
+.stat .row b{display:block;font-size:1.05rem;color:var(--text)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.card.feature{border-color:var(--accent)}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.card-head .phrase{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;color:var(--muted)}
+.score{font-size:.86rem;color:var(--muted)}
+.score b{color:var(--text)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+button.play{font:inherit;font-size:.9rem;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer}
+button.play:hover{border-color:var(--accent)}
+button.play.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+button.play.heard{border-color:var(--accent)}
+.letters{display:flex;flex-wrap:wrap;gap:6px 1.1em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.word{display:inline-flex;gap:3px;white-space:nowrap}
+.lt{display:inline-flex;flex-direction:column;align-items:center;min-width:1.55em;padding:3px 2px 2px;border-radius:6px;cursor:pointer;border:1px solid transparent;background:none;color:inherit;font:inherit}
+.lt .p{font-size:1.35rem;line-height:1.1;font-weight:600}
+.lt .t{font-size:.7rem;line-height:1;height:.8rem;color:var(--muted)}
+.lt.bad .p{color:var(--wrong)}
+.lt.bad{background:var(--wrong-soft)}
+.lt.on{background:var(--hl);border-color:var(--hl)}
+.lt.on .p,.lt.on .t{color:var(--hl-text)}
+.sp{width:.9em}
+.flag{font-size:.78rem;color:var(--wrong)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.split{display:flex;gap:2px;margin:10px 0 6px}
+.split span{flex:1;height:18px;border-radius:3px}
+.s-train{background:var(--accent)} .s-val{background:var(--muted)} .s-test{background:var(--hl)}
+.keys-wrap{display:grid;grid-template-columns:1fr 170px;gap:18px;align-items:start}
+.kb{display:flex;flex-direction:column;gap:5px}
+.kb .krow{display:flex;gap:5px}
+.kb .krow:nth-child(3){padding-left:3%} .kb .krow:nth-child(4){padding-left:7%}
+.key{flex:0 0 calc((100% - 45px)/10);aspect-ratio:1/1;border-radius:7px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font:inherit;color:var(--text);padding:0}
+.key b{font-size:1rem;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.key i{font-style:normal;font-size:.68rem;color:var(--muted)}
+.key:hover{outline:2px solid var(--accent)}
+.k3{background:var(--accent-soft)} .k2{background:var(--mark)} .k1,.k0{background:var(--wrong-soft)}
+.legend div{display:flex;align-items:center;gap:8px;font-size:.86rem;margin:6px 0}
+.legend span{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);flex:none}
+.notes{margin:12px 0 0;padding-left:1.15em}
+.notes li{margin:5px 0}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-size:12px;font-family:inherit}
+.divider{margin:56px 0 8px;padding:14px 16px;border-radius:12px;background:var(--surface-2);text-align:center;font-weight:600}
+.how{color:var(--text)}
+.how ol{padding-left:1.2em} .how li{margin:4px 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td code{white-space:nowrap}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem}
+pre{background:var(--surface-2);padding:12px;border-radius:8px;overflow-x:auto}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:16px 18px;max-width:min(440px,calc(100vw - 32px));width:100%}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog h3{margin:0 0 8px}
+dialog .x{float:right;font:inherit;background:none;border:0;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1}
+.drow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.drow:last-child{border-bottom:0}
+.ok{color:var(--accent);font-weight:600} .no{color:var(--wrong);font-weight:600}
+.bar{display:inline-block;height:8px;background:var(--accent);border-radius:4px;vertical-align:middle;margin-right:6px}
+@media (max-width:760px){
+  .hero,.grid2,.keys-wrap{grid-template-columns:1fr}
+  h1{font-size:1.5rem}
+  .stat .big{font-size:1.8rem}
+  .key b{font-size:.9rem} .key i{font-size:.6rem}
+  .kb .krow{gap:3px} .kb{gap:3px} .key{flex-basis:calc((100% - 27px)/10);border-radius:5px}
+}
+</style>
+</head>
+<body>
+<main>
+<header class="hero">
+  <div>
+    <h1>Can you hear <span id="h-acc">…</span> accuracy?</h1>
+    <p class="lede">A model guessed which key was pressed from the sound alone. We turned its guesses into music. Every wrong note is a key it misheard.</p>
+    <ul class="tight">
+      <li>A small model learned what each of <b id="h-keys">36</b> MacBook keys <b>sounds like</b>, from a phone recording.</li>
+      <li>We played it typing it had <b>never heard</b> and it named each key.</li>
+      <li>Every key is a fixed note. Each phrase plays <b>twice</b>: what was typed, then what the model heard.</li>
+      <li><mark><b>Same tune = right. Wrong note = a key it misheard.</b></mark> No stats needed to judge it.</li>
+    </ul>
+  </div>
+  <div class="stat">
+    <div class="big" id="s-acc">…</div>
+    <div>of unseen key presses named correctly, from sound alone</div>
+    <div class="row">
+      <div><b id="s-keys">36</b>keys</div>
+      <div><b id="s-n">…</b>test presses</div>
+      <div><b id="s-chance">2.8%</b>random guessing</div>
+    </div>
+    <p class="small muted" style="margin:10px 0 0">Smaller model and a stricter test than the paper's 95%. <a href="#how">Why</a></p>
+  </div>
+</header>
+
+<section id="featured"></section>
+
+<h2>The data</h2>
+<div class="grid2">
+  <div class="box">
+    <ul class="tight">
+      <li><b>Public recordings from the paper:</b> a MacBook Pro recorded by a phone 17 cm away. <a href="#credits">Source</a></li>
+      <li><b>36 keys</b> (0–9, a–z) × <b>25 presses</b> each = 900 clicks. Each file is one key, so the labels are free.</li>
+      <li><b>No new recordings.</b> Everything here is reproducible from the public data.</li>
+    </ul>
+  </div>
+  <div class="box">
+    <div class="small"><b>How each key's 25 presses are split</b> (in recording order)</div>
+    <div class="split" id="split"></div>
+    <div class="small muted"><span style="color:var(--accent)">■</span> 1–20 train &nbsp; <span>■</span> 21–22 pick the stopping point &nbsp; <span style="color:#c9a72a">■</span> 23–25 test, never trained on</div>
+    <p class="small" style="margin-top:8px">The phrases below are stitched only from the <b>test presses</b>. Earlier and later presses never mix. <a href="#how">More</a></p>
+  </div>
+</div>
+
+<h2>Listen: what was typed vs what the model heard</h2>
+<p class="muted small">Press <b>What was typed</b>, then <b>What the model heard</b>. Red letters are misheard keys: the big letter is what the model heard, the small one beneath is what was typed. Tap a letter to see the model's top 3 guesses.</p>
+<div id="cards"></div>
+<ul class="notes" id="notes-phrases">
+  <li>Across the 6 phrases the model named <mark><b>57 of 64 keys (89%)</b></mark>, in line with its 86% on the full test set.</li>
+  <li><mark><b>Repeated mistakes are one press, not several.</b></mark> Each key has only 3 unseen presses, so phrases reuse them. The <code>d</code>→<code>s</code> slip in three phrases is the same single recording each time, and so is <code>o</code>→<code>v</code>.</li>
+  <li><mark><b>Unsure misses play quietly.</b></mark> Loudness follows confidence. The <code>o</code>→<code>v</code> slip was only 21% sure, so that wrong note is soft, while the 87%-sure <code>6</code>→<code>8</code> in “2026” plays at full volume.</li>
+  <li>The clicks were found <b>from the audio alone</b>: the isolator located exactly one click per letter in every phrase. <a href="#how">How</a></li>
+</ul>
+
+<h2>Every key, on its 3 unseen presses</h2>
+<div class="keys-wrap">
+  <div class="kb" id="kb"></div>
+  <div class="legend">
+    <div><span class="k3"></span>3 of 3 right</div>
+    <div><span class="k2"></span>2 of 3 right</div>
+    <div><span class="k1"></span>0–1 of 3 right</div>
+    <p class="small muted" style="margin-top:10px">Tap a key to see each of its test presses and what the model heard.</p>
+  </div>
+</div>
+<ul class="notes" id="notes-keys">
+  <li><mark><b>12 of the 15 mistakes were a neighbouring key</b></mark>, for example <code>6</code>→<code>8</code>, <code>d</code>→<code>s</code>, <code>g</code>→<code>f</code> and <code>c</code>→<code>x</code>. Keys that sit close together sound alike.</li>
+  <li><mark><b>The number row is the weakest:</b></mark> 23 of 30 right (77%), against 29 of 30 on the q–p row.</li>
+  <li>The right key was in the model's <mark><b>top 3 guesses for 93%</b></mark> of presses. A second guess would fix most of the misses.</li>
+</ul>
+
+<h2>When the model is sure, it is almost always right</h2>
+<div class="chart box" id="chart"></div>
+<ul class="notes" id="notes-chart">
+  <li><mark><b>Over 90% sure: 48 of 49 right.</b></mark> Under 70% sure: 14 of 26, close to a coin flip. The model's confidence means something.</li>
+  <li>In practice you could keep only the guesses that are at least 70% sure: <mark><b>76% of presses, and 96% of those are right</b></mark>, then send the rest for a second look.</li>
+  <li><b>It is not always humble:</b> one of <code>6</code>'s presses was heard as <code>8</code> at 89% sure and another at 91%. The two keys sound nearly the same to it.</li>
+</ul>
+
+<div class="divider" id="how">That is the result. Everything below is the how.</div>
+
+<section class="how">
+  <h2>How it works</h2>
+  <ol>
+    <li><b>Isolate:</b> cut each key's recording into its 25 clicks using the paper authors' own isolator.</li>
+    <li><b>Train:</b> a compact CoAtNet-style model maps a click's sound (a mel spectrogram) to a key, using presses 1–20.</li>
+    <li><b>Stitch:</b> build each phrase from held-out clicks (presses 23–25), spaced 0.45–0.6 s apart, with 1 s for a space.</li>
+    <li><b>Listen:</b> run the same isolator on the stitched audio, as an eavesdropper would, classify each click, and turn true and guessed keys into notes.</li>
+  </ol>
+
+  <h3>An honest note</h3>
+  <ul class="tight">
+    <li>The phrases were <b>stitched from held-out recordings</b>, not live typing. Real fast typing overlaps presses and would score lower.</li>
+    <li><b>One MacBook, one recording session.</b> A model like this is tuned to the device it learned from. Eshwar measured about 4–5% (near chance) on a different device.</li>
+    <li>The paper reports <b>95%</b> with a larger model and a random split. This is a <b>smaller model on a stricter split</b>: it is tested on the last presses of each key, never mixed with training presses.</li>
+    <li>The isolator found the right number of clicks in every phrase on its own<span id="iso-note"></span>.</li>
+  </ul>
+
+  <h3>The note mapping (fixed, nobody picked notes by ear)</h3>
+  <table>
+    <tr><th>Row</th><th>Instrument</th><th>Pitch</th></tr>
+    <tr><td><code>1 … 0</code></td><td>square wave, soft</td><td rowspan="4">Column from the left → step of <code>C4 D4 E4 G4 A4 C5 D5 E5 G5 A5</code> (pentatonic, so wrong notes sound <i>different</i>, not ugly)</td></tr>
+    <tr><td><code>q … p</code></td><td>sine, bell-like decay</td></tr>
+    <tr><td><code>a … l</code></td><td>triangle</td></tr>
+    <tr><td><code>z … m</code></td><td>sawtooth, low-pass 1.5 kHz</td></tr>
+  </table>
+  <p class="small muted" style="margin-top:8px">Every key has its own (instrument, pitch) pair. In "what the model heard", loudness follows confidence: gain = 0.3 + 0.7 × confidence. Both melodies use the real click times, so the rhythm matches the clicks. The music shows the model's accuracy. It says nothing musical about the keys themselves.</p>
+
+  <h3>Most-confused key pairs (test set)</h3>
+  <div id="pairs"></div>
+
+  <h3>Reproduce</h3>
+<pre>git clone https://github.com/eshwarpotturi/keystroke-replication ../sources/keystroke-replication
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/JBFH-Dev/Keystroke-Datasets ../sources/ksd
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install librosa numpy scipy soundfile
+python scripts/isolate.py                               # 36 keys x 25 clicks -> data/phone.npz
+THREADS=4 python scripts/train.py phone phone 0 150 ordered   # ~10 min on CPU -> models/phone.pt
+python scripts/build_demo.py                            # -> data/demo.json
+python -m http.server                                   # open http://localhost:8000</pre>
+
+  <h3 id="credits">Credits</h3>
+  <ul class="tight">
+    <li>Method and data: Harrison, Toreini, Mehrnezhad, <a href="https://arxiv.org/abs/2308.01074">“A Practical Deep Learning-Based Acoustic Side Channel Attack on Keyboards”</a> (2023).</li>
+    <li>Recordings: <a href="https://github.com/JBFH-Dev/Keystroke-Datasets">JBFH-Dev/Keystroke-Datasets</a> (MBPWavs, phone mic).</li>
+    <li>Isolator, model and training code: Eshwar Potturi's <a href="https://eshwarpotturi.github.io/keystroke-replication/">replication</a> (<a href="https://github.com/eshwarpotturi/keystroke-replication">code</a>).</li>
+  </ul>
+</section>
+</main>
+
+<dialog id="dlg"><button class="x" aria-label="Close" onclick="this.closest('dialog').close()">×</button><div id="dlg-body"></div></dialog>
+
+<script>
+"use strict";
+const ROWS=["1234567890","qwertyuiop","asdfghjkl","zxcvbnm"];
+const LADDER=[261.63,293.66,329.63,392.00,440.00,523.25,587.33,659.25,783.99,880.00];
+const NOTE_NAMES=["C4","D4","E4","G4","A4","C5","D5","E5","G5","A5"];
+const pct=x=>Math.round(x*100)+"%";
+const $=id=>document.getElementById(id);
+function keyPos(k){for(let r=0;r<ROWS.length;r++){const c=ROWS[r].indexOf(k);if(c>=0)return {row:r,col:c};}return null;}
+function noteName(k){const p=keyPos(k);return p?NOTE_NAMES[p.col]+" "+["square","bell","triangle","saw"][p.row]:"";}
+
+let ctx=null, current=null;
+function audio(){if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")ctx.resume();return ctx;}
+function stopAll(){
+  if(!current)return;
+  current.nodes.forEach(n=>{try{n.stop();}catch(e){}});
+  try{current.master.disconnect();}catch(e){}
+  cancelAnimationFrame(current.raf);
+  current.letters.forEach(l=>l.classList.remove("on"));
+  current.btn.classList.remove("on");
+  current=null;
+}
+function note(ac,dest,key,when,gain,nodes){
+  const p=keyPos(key); if(!p)return;
+  const f=LADDER[p.col], o=ac.createOscillator(), g=ac.createGain();
+  let out=g, peak=gain, dur=0.4;
+  if(p.row===0){o.type="square";peak*=0.18;dur=0.3;}
+  else if(p.row===1){o.type="sine";peak*=0.75;dur=0.7;}
+  else if(p.row===2){o.type="triangle";peak*=0.8;dur=0.4;}
+  else{o.type="sawtooth";peak*=0.3;dur=0.35;const lp=ac.createBiquadFilter();lp.type="lowpass";lp.frequency.value=1500;g.connect(lp);out=lp;}
+  o.frequency.value=f; o.connect(g); out.connect(dest);
+  g.gain.setValueAtTime(0.0001,when);
+  g.gain.exponentialRampToValueAtTime(Math.max(peak,0.0002),when+(p.row===1?0.005:0.012));
+  if(p.row===2){g.gain.setValueAtTime(peak,when+0.15);}
+  g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+  o.start(when); o.stop(when+dur+0.05); nodes.push(o);
+}
+function decodeAudio(ph){
+  if(ph._buf)return ph._buf;
+  const bin=atob(ph.audio), n=bin.length>>1, ac=audio(), buf=ac.createBuffer(1,n,ph.sr), ch=buf.getChannelData(0);
+  for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>=32768)v-=65536;ch[i]=v/32768;}
+  return ph._buf=buf;
+}
+function play(ph,mode,btn,letters){
+  const was=current&&current.btn===btn; stopAll(); if(was)return;
+  const ac=audio(), master=ac.createGain(); master.gain.value=0.9; master.connect(ac.destination);
+  const nodes=[], start=ac.currentTime+0.08;
+  let offset, end;
+  if(mode==="clicks"){
+    const src=ac.createBufferSource(); src.buffer=decodeAudio(ph); src.connect(master); src.start(start); nodes.push(src);
+    offset=0; end=ph.duration;
+  }else{
+    offset=ph.presses[0].t-0.15;
+    ph.presses.forEach(p=>{
+      const k=mode==="true"?p.true:p.pred, g=mode==="true"?0.8:0.3+0.7*p.conf;
+      note(ac,master,k,start+p.t-offset,g,nodes);
+    });
+    end=ph.presses[ph.presses.length-1].t-offset+0.8;
+  }
+  btn.classList.add("on");
+  const cur={nodes,master,btn,letters,raf:0}; current=cur;
+  const tick=()=>{
+    if(current!==cur)return;
+    const now=ac.currentTime-start+offset;
+    let idx=-1; ph.presses.forEach((p,i)=>{if(now>=p.t-0.02)idx=i;});
+    letters.forEach((l,i)=>l.classList.toggle("on",i===idx&&now<ph.presses[i].t+0.35));
+    if(ac.currentTime-start>end){stopAll();return;}
+    cur.raf=requestAnimationFrame(tick);
+  };
+  cur.raf=requestAnimationFrame(tick);
+}
+function showDialog(html){$("dlg-body").innerHTML=html;const d=$("dlg");if(d.showModal)d.showModal();else d.setAttribute("open","");}
+function pressDialog(ph,p){
+  const ok=p.true===p.pred;
+  showDialog(`<h3>Typed <code>${p.true}</code>, heard <code class="${ok?"ok":"no"}">${p.pred}</code></h3>
+    <p class="small muted">In “${ph.text}”, at ${p.t.toFixed(2)} s. The model's top 3 guesses:</p>
+    ${p.top3.map(([k,c])=>`<div class="drow"><span><code class="${k===p.true?"ok":""}">${k}</code>${k===p.true?" <span class='small muted'>(the real key)</span>":""}</span><span><span class="bar" style="width:${Math.max(2,c*120)}px"></span>${pct(c)}</span></div>`).join("")}
+    <p class="small muted" style="margin-top:8px">${ok?"Right":"Misheard"}: plays as ${noteName(p.pred)}${ok?"":` instead of ${noteName(p.true)}`}.</p>`);
+}
+function card(ph,feature){
+  const right=ph.presses.filter(p=>p.true===p.pred).length, n=ph.presses.length;
+  const el=document.createElement("div"); el.className="card"+(feature?" feature":"");
+  el.innerHTML=`<div class="card-head"><span class="phrase">typed: “${ph.text}”</span>
+    <span class="score"><b>${right} / ${n}</b> keys right${ph.isolated_from_audio?"":` <span class="flag">· click positions given, not found from audio</span>`}</span></div>
+    <div class="btns"><button class="play" data-m="clicks">▶ Clicks</button><button class="play" data-m="true">▶ What was typed</button><button class="play heard" data-m="pred">▶ What the model heard</button></div>
+    <div class="letters"></div>`;
+  const letters=[]; let i=0, box=null;
+  for(const ch of ph.text){
+    if(ch===" "){box=null;continue;}
+    if(!box){box=document.createElement("span");box.className="word";el.querySelector(".letters").appendChild(box);}
+    const p=ph.presses[i++], ok=p.true===p.pred, b=document.createElement("button");
+    b.className="lt"+(ok?"":" bad"); b.title=ok?`heard ${p.pred} (${pct(p.conf)} sure)`:`typed ${p.true}, heard ${p.pred}`;
+    b.innerHTML=`<span class="p">${p.pred}</span><span class="t">${ok?"":p.true}</span>`;
+    b.onclick=()=>pressDialog(ph,p); box.appendChild(b); letters.push(b);
+  }
+  el.querySelectorAll("button.play").forEach(b=>b.onclick=()=>play(ph,b.dataset.m,b,letters));
+  return el;
+}
+function keyboard(D){
+  const by={}; D.test_items.forEach(t=>(by[t.true]=by[t.true]||[]).push(t));
+  ROWS.forEach(r=>{
+    const row=document.createElement("div"); row.className="krow";
+    for(const k of r){
+      const v=D.per_key[k], b=document.createElement("button");
+      b.className="key k"+v.right; b.innerHTML=`<b>${k}</b><i>${v.right}/${v.n}</i>`;
+      b.title=`${k}: ${v.right} of ${v.n} test presses right`;
+      b.onclick=()=>showDialog(`<h3>Key <code>${k}</code>: ${v.right} of ${v.n} unseen presses right</h3>
+        ${(by[k]||[]).sort((a,b)=>a.pos-b.pos).map(t=>`<div class="drow"><span>press ${t.pos+1}: heard <code class="${t.pred===k?"ok":"no"}">${t.pred}</code></span><span class="small muted">${pct(t.conf)} sure · top 3: ${t.top3.join(" ")}</span></div>`).join("")}`);
+      row.appendChild(b);
+    }
+    $("kb").appendChild(row);
+  });
+}
+function chart(D){
+  const B=[[0,.5,"under 50%"],[.5,.7,"50–70%"],[.7,.9,"70–90%"],[.9,1.01,"90%+"]];
+  const rows=B.map(([lo,hi,l])=>{const s=D.test_items.filter(t=>t.conf>=lo&&t.conf<hi);const r=s.filter(t=>t.true===t.pred).length;return {l,r,w:s.length-r,n:s.length};});
+  // drawn at the box's real width so text stays 12px on phones
+  const W=Math.max(300,Math.min(720,$("chart").clientWidth-32)),H=230,L=8,gap=W<480?10:28,BW=(W-2*L-gap*3)/4;
+  const max=Math.max(...rows.map(r=>r.n)),sc=v=>v/max*(H-75);
+  let s=`<svg viewBox="0 0 ${W} ${H}" style="max-width:${W}px;margin:0 auto" role="img" aria-label="Test presses by model confidence, split into right and wrong">`;
+  rows.forEach((r,i)=>{
+    const x=L+i*(BW+gap), yb=H-40, hr=sc(r.r), hw=sc(r.w);
+    s+=`<rect x="${x}" y="${yb-hr}" width="${BW}" height="${hr}" rx="3" fill="var(--accent)"/>`;
+    s+=`<rect x="${x}" y="${yb-hr-hw}" width="${BW}" height="${hw}" rx="3" fill="var(--wrong)"/>`;
+    s+=`<text x="${x+BW/2}" y="${yb-hr-hw-8}" text-anchor="middle" style="fill:var(--text);font-weight:600">${r.n?pct(r.r/r.n)+" right":"–"}</text>`;
+    s+=`<text x="${x+BW/2}" y="${yb+16}" text-anchor="middle">${r.l}</text>`;
+    s+=`<text x="${x+BW/2}" y="${yb+31}" text-anchor="middle">${r.n} presses</text>`;
+  });
+  s+=`<line x1="0" x2="${W}" y1="${H-40}" y2="${H-40}" stroke="var(--line)"/></svg>`;
+  s+=`<div class="small muted" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px"><span><span style="color:var(--accent)">■</span> named right</span><span><span style="color:var(--wrong)">■</span> misheard</span><span>The ${D.n_test_presses} test presses, grouped by how sure the model was of its guess.</span></div>`;
+  $("chart").innerHTML=s; return rows;
+}
+fetch("data/demo.json").then(r=>r.json()).then(D=>{
+  const acc=pct(D.test_accuracy);
+  $("h-acc").textContent=acc; $("s-acc").textContent=acc; $("s-keys").textContent=D.n_keys; $("h-keys").textContent=D.n_keys;
+  $("s-n").textContent=D.n_test_presses; $("s-chance").textContent=(100/D.n_keys).toFixed(1)+"%";
+  document.title=`Keystroke Music: can you hear ${acc} accuracy?`;
+  $("split").innerHTML=Array.from({length:25},(_,i)=>`<span class="${i<20?"s-train":i<22?"s-val":"s-test"}"></span>`).join("");
+  const feat=D.phrases.findIndex(p=>p.text==="hello world"), fi=feat<0?0:feat;
+  const f=document.createElement("div"); f.innerHTML=`<p class="small muted" style="margin:18px 0 0">Try it: press <b>What was typed</b>, then <b>What the model heard</b>. <a href="#cards">More phrases ↓</a></p>`;
+  f.appendChild(card(D.phrases[fi],true)); $("featured").appendChild(f);
+  D.phrases.forEach((ph,i)=>{if(i!==fi)$("cards").appendChild(card(ph,false));});
+  keyboard(D);
+  chart(D); let rw=innerWidth; addEventListener("resize",()=>{if(innerWidth!==rw){rw=innerWidth;chart(D);}});
+  const nf=D.phrases.filter(p=>!p.isolated_from_audio).length;
+  $("iso-note").textContent=nf?`, except ${nf} phrase(s), which are flagged on their card`:"";
+  $("pairs").innerHTML=`<table><tr><th>Pair</th><th>Times confused (either way)</th></tr>${D.confused_pairs.map(c=>`<tr><td><code>${c.pair[0]}</code> ↔ <code>${c.pair[1]}</code></td><td>${c.count}</td></tr>`).join("")}</table>`;
+}).catch(e=>{document.querySelector("main").insertAdjacentHTML("afterbegin",`<p class="flag">Could not load data/demo.json (${e}). Serve this folder over http, e.g. <code>python -m http.server</code>.</p>`);});
+</script>
+</body>
+</html>
