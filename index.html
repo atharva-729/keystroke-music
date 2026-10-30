@@ -225,11 +225,14 @@ dialog .x{float:right;font:inherit;background:none;border:0;color:var(--muted);c
   <div id="pairs"></div>
 
   <h3>Reproduce</h3>
-<pre>git clone https://github.com/eshwarpotturi/keystroke-replication ../sources/keystroke-replication
-GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/JBFH-Dev/Keystroke-Datasets ../sources/ksd
+<pre>git clone https://github.com/atharva-729/keystroke-music && cd keystroke-music
+python -m http.server                                   # just listen: the clicks are in data/demo.json
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install librosa numpy scipy soundfile
-python scripts/isolate.py                               # 36 keys x 25 clicks -> data/phone.npz
+# optional, data/phone.npz is already in the repo; to rebuild it from the raw recordings (~640 MB):
+#   git clone https://github.com/eshwarpotturi/keystroke-replication ../sources/keystroke-replication
+#   git clone https://github.com/JBFH-Dev/Keystroke-Datasets ../sources/ksd
+#   python scripts/isolate.py                           # 36 keys x 25 clicks -> data/phone.npz
 THREADS=4 python scripts/train.py phone phone 0 150 ordered   # ~10 min on CPU -> models/phone.pt
 python scripts/build_demo.py                            # -> data/demo.json
 python -m http.server                                   # open http://localhost:8000</pre>
