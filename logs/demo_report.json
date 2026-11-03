@@ -26,7 +26,7 @@
   },
   {
    "text": "jukebox",
-   "right": 7,
+   "right": 6,
    "n": 7,
    "isolated_from_audio": true,
    "gaps": [
@@ -34,7 +34,7 @@
     0.6
    ],
    "threshold": 0.06,
-   "max_onset_drift_s": 0.005
+   "max_onset_drift_s": 0.01
   },
   {
    "text": "open the pod bay doors",
@@ -73,6 +73,6 @@
    "max_onset_drift_s": 0.047
   }
  ],
- "phrase_accuracy": 0.890625,
+ "phrase_accuracy": 0.875,
  "test_accuracy": 0.8611111044883728
 }

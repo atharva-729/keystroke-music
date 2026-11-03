@@ -162,7 +162,7 @@ dialog .x{float:right;font:inherit;background:none;border:0;color:var(--muted);c
 <p class="muted small">Press <b>What was typed</b>, then <b>What the model heard</b>. Red letters are misheard keys: the big letter is what the model heard, the small one beneath is what was typed. Tap a letter to see the model's top 3 guesses.</p>
 <div id="cards"></div>
 <ul class="notes" id="notes-phrases">
-  <li>Across the 6 phrases the model named <mark><b>57 of 64 keys (89%)</b></mark>, in line with its 86% on the full test set.</li>
+  <li>Across the 6 phrases the model named <mark><b>56 of 64 keys (88%)</b></mark>, in line with its 86% on the full test set.</li>
   <li><mark><b>Repeated mistakes are one press, not several.</b></mark> Each key has only 3 unseen presses, so phrases reuse them. The <code>d</code>→<code>s</code> slip in three phrases is the same single recording each time, and so is <code>o</code>→<code>v</code>.</li>
   <li><mark><b>Unsure misses play quietly.</b></mark> Loudness follows confidence. The <code>o</code>→<code>v</code> slip was only 21% sure, so that wrong note is soft, while the 87%-sure <code>6</code>→<code>8</code> in “2026” plays at full volume.</li>
   <li>The clicks were found <b>from the audio alone</b>: the isolator located exactly one click per letter in every phrase. <a href="#how">How</a></li>

@@ -16,8 +16,8 @@
 
 ## Checkpoint 3: Demo phrases ✅
 - All 6 phrases isolated from the stitched audio with the exact click count at the default 0.45–0.60 s gaps; no retries, no fallbacks.
-- password123 10/11 · hello world 8/10 · jukebox 7/7 · open the pod bay doors 16/18 · qwerty 6/6 · zoom call 2026 10/12.
-- **Phrase accuracy 57 / 64 = 89.1%** vs 86.1% test: within ±15 points.
+- password123 10/11 · hello world 8/10 · jukebox 6/7 · open the pod bay doors 16/18 · qwerty 6/6 · zoom call 2026 10/12.
+- **Phrase accuracy 56 / 64 = 87.5%** vs 86.1% test: within ±15 points.
 - Deviation: isolation and classification run on the raw-level mix; the 0.9-peak normalisation is applied only to the audio copy used for playback (normalising before classification would shift every feature away from the training normalisation).
 - Note: phrases reuse each key's 3 held-out presses, so one misheard press can recur (d→s and o→v each come from one recording).
 

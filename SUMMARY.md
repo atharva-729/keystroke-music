@@ -13,11 +13,11 @@
 |---|---|
 | password123 | 10 / 11 |
 | hello world | 8 / 10 |
-| jukebox | 7 / 7 |
+| jukebox | 6 / 7 |
 | open the pod bay doors | 16 / 18 |
 | qwerty | 6 / 6 |
 | zoom call 2026 | 10 / 12 |
-| **All phrases** | **57 / 64 (89%)** |
+| **All phrases** | **56 / 64 (88%)** |
 
 The isolator found every click from the audio on its own in all six phrases.
 
